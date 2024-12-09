@@ -1,5 +1,4 @@
 {
-    "python.linting.enabled": true,
     "python.languageServer": "Pylance",
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.diagnosticSeverityOverrides": {
@@ -12,5 +11,11 @@
     ],
     "python.analysis.extraPaths": [
         "~/.micropico-stubs/included"
-    ]
+    ],
+    "ruff.enable": false,
+    "ruff.lint.enable": false,
+    "ruff.fixAll": false,
+    "mypy-type-checker.ignorePatterns": [
+        "*"
+    ],
 }

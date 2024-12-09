@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赤外線信号データ解析と頻度分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        textarea,
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        #chart-container {
+            width: 80%;
+            /* グラフの幅をウィンドウの80%に設定 */
+            height: 300px;
+            /* グラフの高さを固定 */
+            margin: 20px auto;
+        }
+
+        #histogram-container {
+            width: 80%;
+            height: 300px;
+            margin: 20px auto;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        #binaryOutput,
+        #dataLengthOutput {
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>赤外線信号解析と頻度分析</h1>
+    <textarea id="signalInput" rows="10" placeholder="信号データを入力してください"></textarea>
+    <input id="tValueInput" type="text" placeholder="Tの値 (μs)" />
+    <input id="binWidthInput" type="text" placeholder="ヒストグラムの範囲 (デフォルト: 20)" />
+    <div id="dataLengthOutput"></div>
+    <div id="binaryOutput"></div>
+    <button id="plotButton">解析と描画</button>
+    <div id="chart-container">
+        <canvas id="signalChart"></canvas>
+    </div>
+    <div id="histogram-container">
+        <canvas id="histogramChart"></canvas>
+    </div>
+
+    <script>
+        function parseSignalData(signalData, T) {
+            const dataBits = [];
+            for (let i = 2; i < signalData.length - 2; i += 2) {
+                const evenDuration = signalData[i];
+                const oddDuration = Math.abs(signalData[i + 1]);
+
+                if (Math.abs(evenDuration - T) > T * 0.5) {
+                    throw new Error("データの構造が適合しません (Tに誤りがあります)");
+                }
+
+                const bit = oddDuration > T * 2 ? 0 : 1;
+                dataBits.push(bit);
+            }
+            return dataBits;
+        }
+
+        function createHistogramData(signalData, binWidth) {
+            const bins = {};
+            const maxValue = Math.max(...signalData.map(Math.abs));
+            const binCount = Math.ceil(maxValue / binWidth);
+
+            for (let i = 0; i <= binCount; i++) {
+                bins[i * binWidth] = { positive: 0, negative: 0 };
+            }
+
+            signalData.forEach(value => {
+                const absValue = Math.abs(value);
+                const bin = Math.floor(absValue / binWidth) * binWidth;
+                if (value > 0) {
+                    bins[bin].positive++;
+                } else {
+                    bins[bin].negative++;
+                }
+            });
+
+            return bins;
+        }
+
+        document.getElementById('plotButton').addEventListener('click', () => {
+            const input = document.getElementById('signalInput').value.trim();
+            const tValueInput = document.getElementById('tValueInput').value.trim();
+            const binWidthInput = document.getElementById('binWidthInput').value.trim();
+            const signalData = JSON.parse(input);
+
+            let T = parseFloat(tValueInput);
+            if (isNaN(T)) {
+                const durations = [];
+                for (let i = 2; i < signalData.length - 2; i += 2) {
+                    durations.push(signalData[i]);
+                }
+                T = Math.min(...durations);
+                document.getElementById('tValueInput').value = T.toFixed(2);
+            }
+
+            const binWidth = parseFloat(binWidthInput) || 20;
+
+            let dataBits;
+            try {
+                dataBits = parseSignalData(signalData, T);
+            } catch (error) {
+                alert(error.message);
+                return;
+            }
+
+            const binaryString = dataBits.join('');
+            const dataLength = dataBits.length;
+
+            document.getElementById('dataLengthOutput').innerText = `データ長: ${dataLength} ビット`;
+            document.getElementById('binaryOutput').innerText = `データ: ${binaryString}`;
+
+            const histogramData = createHistogramData(signalData, binWidth);
+            const labels = Object.keys(histogramData).map(Number);
+            const positiveCounts = labels.map(label => histogramData[label].positive);
+            const negativeCounts = labels.map(label => histogramData[label].negative);
+
+            // ヒストグラム
+            const ctxHistogram = document.getElementById('histogramChart').getContext('2d');
+            new Chart(ctxHistogram, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '正の頻度',
+                        data: positiveCounts,
+                        backgroundColor: 'blue',
+                    }, {
+                        label: '負の頻度',
+                        data: negativeCounts.map(value => -value),
+                        backgroundColor: 'red',
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '値の範囲',
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '頻度',
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    maintainAspectRatio: false,
+
+                    barPercentage: 1, // 棒グラフの幅を最大化
+                    categoryPercentage: 1.5 // 棒同士の間隔をなくす
+
+
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

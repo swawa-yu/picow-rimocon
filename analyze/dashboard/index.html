@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヒストグラム解析</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="chart-utils.js" defer></script>
+    <script src="histogram.js" defer></script>
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+    <h1>赤外線信号解析と頻度分析</h1>
+    <textarea id="signalInput" rows="10" placeholder="信号データを入力してください"></textarea>
+    <input id="tValueInput" type="text" placeholder="Tの値 (μs)" />
+    <input id="binWidthInput" type="text" placeholder="ヒストグラムの範囲 (デフォルト: 20)" />
+    <button id="plotButton">解析と描画</button>
+
+    <h2>信号データのグラフ</h2>
+    <div id="chart-container">
+        <canvas id="signalChart"></canvas>
+    </div>
+
+    <h2>ヒストグラム (登場する部分のみ)</h2>
+    <div id="histogram-container">
+        <canvas id="histogramPartial"></canvas>
+    </div>
+
+    <h2>ヒストグラム (スケール一定)</h2>
+    <div id="histogram-container">
+        <canvas id="histogramFixed"></canvas>
+    </div>
+
+    <h2>ヒストグラム (平方根スケール)</h2>
+    <div id="histogram-container">
+        <canvas id="histogramSqrt"></canvas>
+    </div>
+</body>
+
+</html>
